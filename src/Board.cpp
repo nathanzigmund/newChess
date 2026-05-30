@@ -28,8 +28,8 @@ void Board::init_pieces() {
     board[0][2].add_piece(new Bishop(true));
     board[0][5].add_piece(new Bishop(true));
 
-    board[0][3].add_piece(new King(true, false, false));
-    board[0][4].add_piece(new Queen(true));
+    board[0][4].add_piece(new King(true, false, false));
+    board[0][3].add_piece(new Queen(true));
 
     //BLACK PAWNS
     for(int i = 0;i < 8;i++) {
@@ -46,8 +46,8 @@ void Board::init_pieces() {
     board[7][2].add_piece(new Bishop(false));
     board[7][5].add_piece(new Bishop(false));
 
-    board[7][4].add_piece(new Queen(false));
-    board[7][3].add_piece(new King(false,false, false));
+    board[7][3].add_piece(new Queen(false));
+    board[7][4].add_piece(new King(false,false, false));
 
 }
 
