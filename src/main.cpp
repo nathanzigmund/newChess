@@ -51,105 +51,69 @@ void drawBoard(SDL_Renderer* renderer) {
     }
     
 }
-/*
-void drawPieces(SDL_Renderer* renderer, Board b) {
-    Img  piece_png = ("../assests/chess.png");
-    for(int i = 0; i < 8;i++) {
-        for(int j = 0; j < 8; j++) {
-            if (b.get_square(i,j).get_piece() != nullptr) {
 
-                int image_x = piece_png.;
-                int image_y = ;
-                //draw piece
-                SDL_Rect  piece;
-                
+
+void printPieces(SDL_Renderer* renderer, Board b, SDL_Texture* texture, int img_x, int img_y) {
+    
+    for(int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8;j++) {
+            Piece* p = b.get_square(i,j).get_piece();
+            if(!p) {
+                continue;
             }
+            
+            SDL_Rect sourceRect;
+            if(p->get_team()) {
+                sourceRect.y = (int)(img_y / 2);
+            } else {
+                sourceRect.y = 0;
+            }
+
+
+            if(p->get_type() == PieceType::King) {
+                sourceRect.x = 0;
+                
+            } 
+            else if (p->get_type() == PieceType::Queen) {
+                sourceRect.x = (int)((img_x / 6) * 1 );
+            }
+             else if (p->get_type() == PieceType::Bishop) {
+                sourceRect.x = (int)((img_x / 6) * 2 );
+            }
+             else if (p->get_type() == PieceType::Knight) {
+                sourceRect.x = (int)((img_x / 6) * 3 );
+            }
+             else if (p->get_type() == PieceType::Rook) {
+                sourceRect.x = (int)((img_x / 6) * 4 );
+            }
+            else {
+                sourceRect.x = (int)((img_x / 6) * 5 );
+            }
+
+            
+            
+            
+            sourceRect.h = (int)(img_y / 2);
+            sourceRect.w = (int)(img_x / 6);
+            SDL_Rect destinationRect;
+            destinationRect.x = BOARD_SIZE * j;  
+            destinationRect.y = BOARD_SIZE * i;   
+            destinationRect.w = BOARD_SIZE;  
+            destinationRect.h = BOARD_SIZE;  
+
+            // Copy to the renderer
+            SDL_RenderCopy(renderer, texture, &sourceRect, &destinationRect);
+            
         }
     }
-    
-}
-
-
-*/
-void testPrintImg(SDL_Renderer* renderer) {
-    // FIX 1: Removed leading slash so it looks inside your project folder
-    SDL_Surface* surface = IMG_Load("assets/chess.png");
-    if (!surface) {
-        std::cerr << "IMG_Load Error: " << IMG_GetError() << std::endl;
-        return; // Exit early so it doesn't crash below
-    }
-
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (!texture) {
-        std::cerr << "Texture Error: " << SDL_GetError() << std::endl;
-        SDL_FreeSurface(surface);
-        return;
-    }
-    
     // Always free the surface as soon as the texture is made to save memory
-    SDL_FreeSurface(surface);
-
-    SDL_Rect destinationRect;
-    destinationRect.x = 100;  
-    destinationRect.y = 50;   
-    destinationRect.w = 200;  
-    destinationRect.h = 200;  
-
-    // Copy to the renderer
-    SDL_RenderCopy(renderer, texture, NULL, &destinationRect);
     
-    // Push the changes to the screen
-    SDL_RenderPresent(renderer);
-
-    // Clean up the texture so you don't leak GPU memory
-    SDL_DestroyTexture(texture);
-}
-
-
-/*
-void testPrintImg(SDL_Renderer* renderer) {
-    fstream chess_png;
-    chess_png.open("assets/chess.png");
-    cout << chess_png.is_open() << endl; //
-    streamsize size = chess_png.tellg();
-    chess_png.seekg(0,ios::beg);
    
     
-    // read file into buffer
-     std::vector<char> buffer(size);
-    if(!chess_png.read(buffer.data(), size)) {
-        cerr << "failed to read file data" << endl;
-        
-    }
 
-    SDL_RWops* rw = SDL_RWFromConstMem(buffer.data(), size);
-    if (!rw) {
-        std::cerr << "SDL_RWFromConstMem Error: " << SDL_GetError() << std::endl;
-        
-    }
-
-    SDL_Surface* surface = IMG_Load("assets/chess.png");
-    if (!surface) {
-        std::cerr << "IMG_LoadPNG_RW Error: " << IMG_GetError() << std::endl;
-        
-    }
-
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer,surface);
-
-    SDL_Rect destinationRect;
-    destinationRect.x = 100;  // X position on screen
-    destinationRect.y = 50;   // Y position on screen
-    destinationRect.w = 200;  // Width to stretch or shrink image
-    destinationRect.h = 200;  // Height to stretch or shrink image
-
-    // Pass NULL as the source parameter to display the whole texture
-    SDL_RenderCopy(renderer, texture, NULL, &destinationRect);
-    chess_png.close();
-    SDL_RenderPresent(renderer);
+   
 }
 
-
-*/
 
 vector<int> get_move() {
     string move;
@@ -170,16 +134,32 @@ int main() {
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;
     
+    Board board = Board();
+    board.display_board();
     SDL_Init(SDL_INIT_EVERYTHING);
     SDL_CreateWindowAndRenderer(WINDOW_SIZE,WINDOW_SIZE,0,&window,&renderer);
     SDL_SetWindowTitle(window,"Chess game!");
     bool running = true;
 
+    SDL_Surface* surface = IMG_Load("assets/chess.png");
+    
+    int img_x = surface->w;
+    int img_y = surface->h;
+    if (!surface) {
+        std::cerr << "IMG_Load Error: " << IMG_GetError() << std::endl;
+        return 0; // Exit early so it doesn't crash below
+    }
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (!texture) {
+        std::cerr << "Texture Error: " << SDL_GetError() << std::endl;
+        SDL_FreeSurface(surface);
+        return 0;
+    }
+
     SDL_MouseButtonEvent mouse_click;
     SDL_Event e;
     SDL_RenderClear(renderer); //make black screen
-    testPrintImg(renderer);
-    SDL_Delay(1000);
     while(running) {
         SDL_SetRenderDrawColor(renderer,0,0,0,255); //set color black
         while(SDL_PollEvent(&e)) {
@@ -195,10 +175,12 @@ int main() {
 
         
         drawBoard(renderer);
+        printPieces(renderer,board,texture,img_x,img_y);
         SDL_RenderPresent(renderer);
         
     }
-    
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
     return 0;
 }
 
