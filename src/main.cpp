@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <fstream>
+#include <algorithm>
 
 #include "../include/all_headers.hpp"
 using namespace std;
@@ -9,14 +10,21 @@ using namespace std;
 SDL_Color lightSquareColor = { 240, 217, 181, 255 }; // Cream
 SDL_Color darkSquareColor  = { 181, 136,  99, 255 }; // Brown
 
-const int BOARD_SIZE = 120;
+const int TILE_SIZE = 120;
 const int WINDOW_SIZE = 960;
+
+//Engine Logic
+bool player_turn = true; 
+bool select_mode = true;
+int selected_x, selected_y;
+int move_x, move_y;
+std::vector<Move> moves;
 
 void drawWhiteSquare(SDL_Renderer* renderer, int x, int y) {
     SDL_SetRenderDrawColor(renderer,lightSquareColor.r,lightSquareColor.g,lightSquareColor.b,255); //set color white
     SDL_Rect r;
-    r.h = BOARD_SIZE;
-    r.w = BOARD_SIZE;
+    r.h = TILE_SIZE;
+    r.w = TILE_SIZE;
     r.x = x;
     r.y = y;
 
@@ -25,19 +33,19 @@ void drawWhiteSquare(SDL_Renderer* renderer, int x, int y) {
 void drawBlackSquare(SDL_Renderer* renderer, int x, int y) {
     SDL_SetRenderDrawColor(renderer,darkSquareColor.r,darkSquareColor.g,darkSquareColor.b,255); //set color black
     SDL_Rect r;
-    r.h = BOARD_SIZE;
-    r.w = BOARD_SIZE;
+    r.h = TILE_SIZE;
+    r.w = TILE_SIZE;
     r.x = x;
     r.y = y;
 
     SDL_RenderFillRect(renderer,&r);
 }
-void drawBoard(SDL_Renderer* renderer) {
+void drawBoard(SDL_Renderer* renderer, Board b) {
     for(int i = 0;i < 8; i++) {
         for(int j = 0; j < 8;j++) {
-            bool square_color = ((i+j) % 2 == 0) ? true : false;
-            int x = i * BOARD_SIZE;
-            int y = j * BOARD_SIZE;
+            bool square_color = b.get_square(i,j).get_color();
+            int x = j * TILE_SIZE;
+            int y = i * TILE_SIZE;
             if(square_color) {
                 drawWhiteSquare(renderer,x,y);
                 
@@ -53,6 +61,51 @@ void drawBoard(SDL_Renderer* renderer) {
 }
 
 
+void highlight_moves_square(SDL_Renderer* renderer, int row, int col) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_Color lightPurple = { 230, 230, 250, 128 };
+    SDL_SetRenderDrawColor(renderer, lightPurple.r, lightPurple.g, lightPurple.b, lightPurple.a);
+
+    SDL_Rect highlightRect;
+    highlightRect.x = col * TILE_SIZE; // Columns map to X-axis
+    highlightRect.y = row * TILE_SIZE; // Rows map to Y-axis
+    highlightRect.w = TILE_SIZE;
+    highlightRect.h = TILE_SIZE;
+    
+    SDL_RenderFillRect(renderer, &highlightRect);
+    
+    // Reset blend mode back to default so other textures aren't corrupted
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+    
+}
+
+void highlight_select_square(SDL_Renderer* renderer, int row, int col) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_Color lightBlue = { 173, 216, 230, 128 };
+    SDL_SetRenderDrawColor(renderer, lightBlue.r, lightBlue.g, lightBlue.b, lightBlue.a);
+
+    SDL_Rect highlightRect;
+    highlightRect.x = col * TILE_SIZE; // Columns map to X-axis
+    highlightRect.y = row * TILE_SIZE; // Rows map to Y-axis
+    highlightRect.w = TILE_SIZE;
+    highlightRect.h = TILE_SIZE;
+    
+    SDL_RenderFillRect(renderer, &highlightRect);
+    
+    // Reset blend mode back to default so other textures aren't corrupted
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+    
+}
+void draw_highlight(SDL_Renderer* renderer, int row , int col, vector<Move> moves) {
+    if(select_mode == false) {
+        highlight_select_square(renderer,row,col);
+        for(auto& m : moves) {
+            highlight_moves_square(renderer,m.to_row,m.to_col);
+        }
+    }
+}
+
+
 void printPieces(SDL_Renderer* renderer, Board b, SDL_Texture* texture, int img_x, int img_y) {
     
     for(int i = 0; i < 8; i++) {
@@ -64,9 +117,9 @@ void printPieces(SDL_Renderer* renderer, Board b, SDL_Texture* texture, int img_
             
             SDL_Rect sourceRect;
             if(p->get_team()) {
-                sourceRect.y = (int)(img_y / 2);
-            } else {
                 sourceRect.y = 0;
+            } else {
+                sourceRect.y = (int)(img_y / 2);
             }
 
 
@@ -96,13 +149,14 @@ void printPieces(SDL_Renderer* renderer, Board b, SDL_Texture* texture, int img_
             sourceRect.h = (int)(img_y / 2);
             sourceRect.w = (int)(img_x / 6);
             SDL_Rect destinationRect;
-            destinationRect.x = BOARD_SIZE * j;  
-            destinationRect.y = BOARD_SIZE * i;   
-            destinationRect.w = BOARD_SIZE;  
-            destinationRect.h = BOARD_SIZE;  
+            destinationRect.x = TILE_SIZE * j;  
+            destinationRect.y = TILE_SIZE * i;   
+            destinationRect.w = TILE_SIZE;  
+            destinationRect.h = TILE_SIZE;  
 
             // Copy to the renderer
             SDL_RenderCopy(renderer, texture, &sourceRect, &destinationRect);
+            
             
         }
     }
@@ -128,14 +182,16 @@ vector<int> get_move() {
     coords.push_back((7 - utils::char_to_int(move[3])));
     
     return coords;
-}   
+}
+
+
 int main() {
 
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;
     
-    Board board = Board();
-    board.display_board();
+    Board board = Board(true);
+    
     SDL_Init(SDL_INIT_EVERYTHING);
     SDL_CreateWindowAndRenderer(WINDOW_SIZE,WINDOW_SIZE,0,&window,&renderer);
     SDL_SetWindowTitle(window,"Chess game!");
@@ -165,17 +221,68 @@ int main() {
         while(SDL_PollEvent(&e)) {
             if(e.type == SDL_QUIT) running = false;
             else if(e.type == SDL_MOUSEBUTTONDOWN) {
-                int selected_x;
-                int selected_y;
-                SDL_GetMouseState(&selected_x,&selected_y);
-                cout << "mouse click x: " << selected_x << " y: " << selected_y << endl;
+                
+                if(select_mode) {
+                    
+                    SDL_GetMouseState(&selected_x,&selected_y);
+                    selected_x = selected_x/ TILE_SIZE;
+                    selected_y = selected_y / TILE_SIZE;
+                    board.get_square(selected_y,selected_x).print();
+                    Piece* p = board.get_square(selected_y,selected_x).get_piece();
+                    if(p) {
+                        if(player_turn == p->get_team() ) {
+                            moves = board.get_moves_for_piece(selected_y,selected_x);
+                            if (!moves.empty()) {
+                                for(int i = 0; i < (int)moves.size(); i++) {
+                                    cout << "move " << i <<": " << moves.at(i).to_row << " " << moves.at(i).to_col << endl;
+                                }
+                            }
+                            select_mode = false;
+                        }
+                        
+                    }
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                } 
+                //else move mode
+                else {
+                    SDL_GetMouseState(&move_x,&move_y);
+                    move_x = move_x/ TILE_SIZE;
+                    move_y = move_y / TILE_SIZE;
+                    if(!(selected_x == move_x && selected_y == move_y)) { //  cancel the same square as selected
+                        //cout << "same square selected, cancel move" << endl;
+                    
+                        Move player_move = Move(move_y,move_x);
+
+                        if(find(moves.begin(),moves.end(), player_move) != moves.end()) {
+                            cout << "valid move" << endl;
+                            board.move_piece(selected_y,selected_x,move_y,move_x);
+                            player_turn = !player_turn;
+                        }
+                        else {
+                            cout << "invalid move" << endl;
+                        }
+                        
+                    }
+                    
+                    select_mode = true;
+                }
+                
+                
+
               
             }
         }
 
         
-        drawBoard(renderer);
+        drawBoard(renderer, board);
         printPieces(renderer,board,texture,img_x,img_y);
+        draw_highlight(renderer,selected_y,selected_x,moves);
         SDL_RenderPresent(renderer);
         
     }

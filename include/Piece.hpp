@@ -17,6 +17,7 @@ class Piece {
     virtual ~Piece() {}
 
     virtual PieceType get_type() const = 0;
+    virtual void move();
 
     int get_value();
     void print(); 

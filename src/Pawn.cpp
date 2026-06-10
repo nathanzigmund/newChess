@@ -14,5 +14,5 @@ bool Pawn::hasMoved() {
 }
 
 void Pawn::move() {
-    has_moved = false;
+    has_moved = true;
 }

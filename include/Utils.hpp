@@ -8,5 +8,6 @@ namespace utils {
     int char_to_int(char c);
     void display_pieces(Board b);
     std::vector<int> get_tile_key(int screen_size);
+    bool in_bounds(int r, int c);
 }   
 #endif

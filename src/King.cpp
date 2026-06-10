@@ -15,7 +15,7 @@ bool King::isChecked() {
     return in_check;
 }
 void King::move() {
-    has_moved = false;
+    has_moved = true;
 }
 
 void King::setCheck(bool b) {

@@ -1,6 +1,6 @@
 # Compiler settings
 CXX = g++
-CXXFLAGS = -I./include -Wall -std=c++17
+CXXFLAGS = -g -I./include -Wall -std=c++17
 
 #SFML libraries to link
 SFML_FLAGS = -lSDL2 -lSDL2_image

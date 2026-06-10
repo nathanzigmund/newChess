@@ -12,12 +12,12 @@ std::string utils::color_to_string(bool color) {
 }
 
 void utils::display_pieces(Board b) {
-    for(int i = 7; i >= 0; i--) {
-        for(int j = 7; j>= 0;j--) {
-            Piece* p = b.get_square(i,j).get_piece();
+    for(int col = 7; col >= 0; col--) {
+        for(int row = 7; row>= 0;row--) {
+            Piece* p = b.get_square(col,row).get_piece();
             
             if(p) {
-                std::cout << " " << p->get_value() << " ";
+                std::cout << " " << utils::color_to_string(p->get_team()) << " ";
             }
             else std::cout << "   ";
             
@@ -26,10 +26,19 @@ void utils::display_pieces(Board b) {
     }
 }
 
+/**
+ * @brief helper function for the board::display_board() comand
+ * @param screen_size size of screen;
+ * @return list of tiles that are holding pieces aka: actual piece
+ */
 std::vector<int> utils::get_tile_key(int screen_size) {
     std::vector<int> nums;
     for(int i = 0; i < screen_size; i++) {
         if(i % 3 == 1) nums.push_back(i);
     }
     return nums;
+}
+
+bool utils::in_bounds(int r, int c) {
+    return r >= 0 && r < 8 && c >= 0 && c < 8;
 }

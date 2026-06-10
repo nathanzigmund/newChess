@@ -12,5 +12,5 @@ bool Rook::hasMoved() {
 }
 
 void Rook::move() {
-    has_moved = false;
+    has_moved = true;
 }
